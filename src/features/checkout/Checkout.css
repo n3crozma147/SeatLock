@@ -1,0 +1,77 @@
+.checkout {
+  position: sticky;
+  top: 1.5rem;
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--panel);
+}
+.checkout__actions {
+  display: grid;
+  gap: 0.6rem;
+}
+.checkout__hint {
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+}
+
+.seat-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.seat-chips li {
+  padding: 0.3rem 0.7rem;
+  border-radius: var(--radius-sm);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.hold-timer__label {
+  color: var(--ink-muted);
+  font-weight: 600;
+}
+.hold-timer__time {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 4rem;
+  font-weight: 800;
+  line-height: 1;
+}
+.hold-timer__track {
+  height: 6px;
+  margin-top: 0.75rem;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--line);
+}
+.hold-timer__fill {
+  height: 100%;
+  background: var(--accent);
+  transform-origin: left;
+  transition: transform 1s linear;
+}
+.hold-timer--urgent .hold-timer__time,
+.hold-timer--urgent .hold-timer__label {
+  color: var(--danger);
+}
+.hold-timer--urgent .hold-timer__fill {
+  background: var(--danger);
+}
+@media (prefers-reduced-motion: reduce) {
+  .hold-timer__fill {
+    transition: none;
+  }
+}
+
+.mock-payment {
+  display: grid;
+  gap: 0.75rem;
+  color: var(--ink-muted);
+  font-size: 0.9rem;
+}

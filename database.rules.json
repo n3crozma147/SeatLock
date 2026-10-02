@@ -1,0 +1,67 @@
+{
+  "rules": {
+    "events": {
+      ".read": true,
+      ".write": false
+    },
+    "counters": {
+      "$event": {
+        "nextTicket": {
+          ".read": "auth != null",
+          ".write": "auth != null && root.child('events/' + $event).exists()",
+          ".validate": "newData.isNumber() && data.exists() && newData.val() == data.val() + 1"
+        }
+      }
+    },
+    "tickets": {
+      "$event": {
+        "$uid": {
+          ".read": "auth != null && auth.uid == $uid",
+          ".write": "auth != null && auth.uid == $uid && !data.exists()",
+          ".validate": "newData.isNumber() && newData.val() == root.child('counters/' + $event + '/nextTicket').val() && newData.parent().parent().parent().child('counters/' + $event + '/nextTicket').val() == newData.val() + 1"
+        }
+      }
+    },
+    "seats": {
+      "$event": {
+        ".read": "auth != null",
+        "$seat": {
+          ".write": "auth != null && $seat.matches(/^[A-Z][0-9]+$/) && ((newData.child('status').val() == 'held' && newData.child('holder').val() == auth.uid && newData.child('lockedAt').val() == now && !newData.child('bookedAt').exists() && (!data.exists() || (data.child('status').val() == 'held' && data.child('lockedAt').val() + root.child('events/' + $event + '/ttlMs').val() < now)) && root.child('tickets/' + $event + '/' + auth.uid).exists() && root.child('tickets/' + $event + '/' + auth.uid).val() * root.child('events/' + $event + '/intervalMs').val() <= (now - root.child('events/' + $event + '/saleStart').val()) * root.child('events/' + $event + '/batch').val()) || (newData.child('status').val() == 'booked' && newData.child('holder').val() == auth.uid && newData.child('lockedAt').val() == data.child('lockedAt').val() && newData.child('bookedAt').val() == now && data.child('status').val() == 'held' && data.child('holder').val() == auth.uid && data.child('lockedAt').val() + root.child('events/' + $event + '/ttlMs').val() >= now) || (!newData.exists() && data.child('status').val() == 'held' && data.child('holder').val() == auth.uid))",
+          ".validate": "newData.hasChildren(['status', 'holder', 'lockedAt'])",
+          "status": {
+            ".validate": "newData.val() == 'held' || newData.val() == 'booked'"
+          },
+          "holder": {
+            ".validate": "newData.isString()"
+          },
+          "lockedAt": {
+            ".validate": "newData.isNumber()"
+          },
+          "bookedAt": {
+            ".validate": "newData.isNumber()"
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
+    },
+    "bookings": {
+      "$event": {
+        "$uid": {
+          ".read": "auth != null && auth.uid == $uid",
+          "$seat": {
+            ".write": "auth != null && auth.uid == $uid && !data.exists() && root.child('seats/' + $event + '/' + $seat + '/status').val() == 'held' && root.child('seats/' + $event + '/' + $seat + '/holder').val() == auth.uid && newData.parent().parent().parent().parent().child('seats/' + $event + '/' + $seat + '/status').val() == 'booked'",
+            ".validate": "newData.hasChildren(['bookedAt']) && newData.child('bookedAt').val() == now",
+            "bookedAt": {
+              ".validate": "newData.isNumber()"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        }
+      }
+    }
+  }
+}
