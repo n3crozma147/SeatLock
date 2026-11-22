@@ -1,0 +1,53 @@
+:root {
+  --ink: #1b2333;
+  --ink-muted: #59637a;
+  --paper: #f2f4f8;
+  --panel: #ffffff;
+  --line: #d9dfe8;
+  --line-strong: #b4bfcf;
+
+  --accent: #2f5bd3; /* you: your selection and your holds */
+  --accent-strong: #2147ad;
+  --accent-soft: #e3eafb;
+  --on-accent: #ffffff;
+
+  --seat-free: #c5cfde;
+  --seat-free-hover: #9fb0c8;
+  --held: #d9932b; /* temporary: someone else's hold */
+  --held-soft: #fbeedb;
+  --booked: #7d8597; /* final: sold */
+  --danger: #b33a2b;
+  --danger-soft: #f8e1dd;
+  --ok: #2c7a57;
+
+  --font-display: 'Big Shoulders Display', 'Arial Narrow', 'Roboto Condensed', sans-serif;
+  --font-body: 'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --space: 1rem;
+  --measure: 70ch;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e7ebf3;
+    --ink-muted: #a3adc2;
+    --paper: #151b27;
+    --panel: #1d2533;
+    --line: #2d3748;
+    --line-strong: #46536a;
+    --accent: #6f93f2;
+    --accent-strong: #8ba8f5;
+    --accent-soft: #23314f;
+    --on-accent: #0f1626;
+    --seat-free: #3a4559;
+    --seat-free-hover: #52607a;
+    --held: #e0a64a;
+    --held-soft: #3a2f1c;
+    --booked: #59617a;
+    --danger: #e0715f;
+    --danger-soft: #3d2420;
+    --ok: #5cc092;
+  }
+}
