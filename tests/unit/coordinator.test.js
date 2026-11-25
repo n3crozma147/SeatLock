@@ -175,7 +175,11 @@ describe('simulated room: the coordinator can never overfill it', () => {
       nowServing = next;
       if (step % 4 === 0) {
         let n = 0;
-        for (let t = cursor; t < nowServing && n < 2; t++) if (!finished.has(`u${t}`)) (finished.add(`u${t}`), n++);
+        for (let t = cursor; t < nowServing && n < 2; t++) {
+          if (finished.has(`u${t}`)) continue;
+          finished.add(`u${t}`);
+          n++;
+        }
       }
     }
     expect(peak).toBeGreaterThan(0);

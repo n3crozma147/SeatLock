@@ -1,7 +1,7 @@
-import { get, ref, update } from 'firebase/database';
+import { get, onValue, ref, update } from 'firebase/database';
 import { jitteredBackoff, sleep } from '../lib/backoff.js';
 import { ErrorCode, isPermissionDenied, SeatLockError } from '../lib/errors.js';
-import { counterPath, ticketPath } from '../lib/paths.js';
+import { counterPath, nowServingPath, ticketPath } from '../lib/paths.js';
 
 export function createQueueService(db) {
   async function getTicket(eventId, uid) {
@@ -39,5 +39,13 @@ export function createQueueService(db) {
     throw new SeatLockError(ErrorCode.QUEUE_CONTENDED, 'The queue is very busy. Reload to try again.');
   }
 
-  return { getTicket, takeTicket };
+  /**
+   * Occupancy mode: follow the single "now serving" number the coordinator maintains.
+   * It is the only thing a waiting user needs to listen to. Returns an unsubscribe function.
+   */
+  function subscribeNowServing(eventId, onData, onError) {
+    return onValue(ref(db, nowServingPath(eventId)), (snap) => onData(snap.val() ?? 0), onError);
+  }
+
+  return { getTicket, takeTicket, subscribeNowServing };
 }
