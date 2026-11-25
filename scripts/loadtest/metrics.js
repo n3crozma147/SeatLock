@@ -3,6 +3,19 @@ export class Metrics {
   constructor() {
     this.counters = new Map();
     this.samples = new Map();
+    this.inside = 0;
+    this.peakInside = 0;
+  }
+
+  /** A simulated user starts using the seat map (they were admitted). */
+  enter() {
+    this.inside++;
+    this.peakInside = Math.max(this.peakInside, this.inside);
+  }
+
+  /** ... and finishes: booked, released, gave up, or walked away. */
+  leave() {
+    this.inside--;
   }
 
   count(name, by = 1) {

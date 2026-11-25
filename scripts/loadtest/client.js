@@ -15,7 +15,43 @@ import { createSeatService } from '../../src/services/seatService.js';
 
 const pick = (items, k) => [...items].sort(() => Math.random() - 0.5).slice(0, k);
 
-export async function runClient(index, { projectId, eventId, event, confirmRate, maxHoldAttempts }, metrics) {
+// Occupancy mode: wait until the coordinator's nowServing passes our ticket, exactly like the
+// browser does (one listener on one number). Resolves false if `signal` aborts first (sale ended).
+function waitUntilServed(queue, eventId, ticket, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      resolve(false);
+      return;
+    }
+    let unsubscribe = () => {};
+    const onAbort = () => finish(false);
+    function finish(served) {
+      unsubscribe();
+      signal?.removeEventListener('abort', onAbort);
+      resolve(served);
+    }
+    signal?.addEventListener('abort', onAbort);
+    unsubscribe = queue.subscribeNowServing(
+      eventId,
+      (nowServing) => {
+        if (ticket < nowServing) finish(true);
+      },
+      reject,
+    );
+  });
+}
+
+// Standard emulator env vars, defaulting to the ports in firebase.json.
+function hostPort(value, fallbackHost, fallbackPort) {
+  const [host, port] = (value ?? `${fallbackHost}:${fallbackPort}`).split(':');
+  return { host, port: Number(port) };
+}
+
+export async function runClient(
+  index,
+  { projectId, eventId, event, confirmRate, maxHoldAttempts, dwellMs = 0, signal },
+  metrics,
+) {
   const app = initializeApp(
     {
       apiKey: 'demo-api-key',
@@ -25,14 +61,17 @@ export async function runClient(index, { projectId, eventId, event, confirmRate,
     `loadtest-${index}`,
   );
   const auth = getAuth(app);
-  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
+  const authHost = hostPort(process.env.FIREBASE_AUTH_EMULATOR_HOST, '127.0.0.1', 9099);
+  connectAuthEmulator(auth, `http://${authHost.host}:${authHost.port}`, { disableWarnings: true });
   const db = getDatabase(app);
-  connectDatabaseEmulator(db, '127.0.0.1', 9000);
+  const dbHost = hostPort(process.env.FIREBASE_DATABASE_EMULATOR_HOST, '127.0.0.1', 9000);
+  connectDatabaseEmulator(db, dbHost.host, dbHost.port);
 
   const queue = createQueueService(db);
   const seatsApi = createSeatService(db);
   const allSeatIds = generateLayout(event.rows, event.cols).flatMap((row) => row.seats);
 
+  let inside = false;
   try {
     const { user } = await metrics.time('sign in', () => signInAnonymously(auth));
     const uid = user.uid;
@@ -43,8 +82,22 @@ export async function runClient(index, { projectId, eventId, event, confirmRate,
     );
     metrics.count('ticket CAS retries', retries);
 
-    // Wait our turn. Local and emulator clocks are the same machine here.
-    await sleep(msUntilAdmission(ticket, event, Date.now()) + 50);
+    if (event.admissionMode === 'occupancy') {
+      // Wait for the coordinator to let us in.
+      const served = await waitUntilServed(queue, eventId, ticket, signal);
+      if (!served) {
+        metrics.count('left queue: sale ended');
+        return;
+      }
+    } else {
+      // Wait our turn. Local and emulator clocks are the same machine here.
+      await sleep(msUntilAdmission(ticket, event, Date.now()) + 50);
+    }
+
+    // We are in the room: from here until we finish, we count as "inside".
+    metrics.enter();
+    inside = true;
+    if (dwellMs > 0) await sleep(dwellMs); // browsing the seat map before choosing
 
     const want = 1 + Math.floor(Math.random() * Math.min(2, event.maxSeats));
     for (let attempt = 0; attempt < maxHoldAttempts; attempt++) {
@@ -86,6 +139,7 @@ export async function runClient(index, { projectId, eventId, event, confirmRate,
   } catch (err) {
     metrics.count(`error: ${err.code ?? err.message}`);
   } finally {
+    if (inside) metrics.leave();
     await deleteApp(app);
   }
 }
