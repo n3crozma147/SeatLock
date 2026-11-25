@@ -10,3 +10,8 @@ export const seatPath = (eventId, seatId) => `seats/${eventId}/${seatId}`;
 export const allBookingsPath = (eventId) => `bookings/${eventId}`;
 export const bookingsPath = (eventId, uid) => `bookings/${eventId}/${uid}`;
 export const bookingPath = (eventId, uid, seatId) => `bookings/${eventId}/${uid}/${seatId}`;
+
+// Occupancy-based admission (see docs/ARCHITECTURE.md).
+export const nowServingPath = (eventId) => `counters/${eventId}/nowServing`;
+export const coordinatorAdmittedPath = (eventId) => `coordinator/${eventId}/admitted`;
+export const coordinatorAdmissionPath = (eventId, ticket) => `coordinator/${eventId}/admitted/${ticket}`;

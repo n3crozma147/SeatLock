@@ -65,3 +65,10 @@ export const confirmUpdate = (uid, seatId = 'A1') => ({
   [`seats/${EVENT}/${seatId}/bookedAt`]: TS,
   [`bookings/${EVENT}/${uid}/${seatId}`]: { bookedAt: TS },
 });
+
+/** Move the occupancy-mode "now serving" pointer (only the coordinator can do this in production). */
+export async function setNowServing(env, n) {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await ctx.database().ref(`counters/${EVENT}/nowServing`).set(n);
+  });
+}

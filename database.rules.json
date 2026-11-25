@@ -6,12 +6,19 @@
     },
     "counters": {
       "$event": {
+        "nowServing": {
+          ".read": "auth != null"
+        },
         "nextTicket": {
           ".read": "auth != null",
           ".write": "auth != null && root.child('events/' + $event).exists()",
           ".validate": "newData.isNumber() && data.exists() && newData.val() == data.val() + 1"
         }
       }
+    },
+    "coordinator": {
+      ".read": false,
+      ".write": false
     },
     "tickets": {
       "$event": {
@@ -26,7 +33,7 @@
       "$event": {
         ".read": "auth != null",
         "$seat": {
-          ".write": "auth != null && $seat.matches(/^[A-Z][0-9]+$/) && ((newData.child('status').val() == 'held' && newData.child('holder').val() == auth.uid && newData.child('lockedAt').val() == now && !newData.child('bookedAt').exists() && (!data.exists() || (data.child('status').val() == 'held' && data.child('lockedAt').val() + root.child('events/' + $event + '/ttlMs').val() < now)) && root.child('tickets/' + $event + '/' + auth.uid).exists() && root.child('tickets/' + $event + '/' + auth.uid).val() * root.child('events/' + $event + '/intervalMs').val() <= (now - root.child('events/' + $event + '/saleStart').val()) * root.child('events/' + $event + '/batch').val()) || (newData.child('status').val() == 'booked' && newData.child('holder').val() == auth.uid && newData.child('lockedAt').val() == data.child('lockedAt').val() && newData.child('bookedAt').val() == now && data.child('status').val() == 'held' && data.child('holder').val() == auth.uid && data.child('lockedAt').val() + root.child('events/' + $event + '/ttlMs').val() >= now) || (!newData.exists() && data.child('status').val() == 'held' && data.child('holder').val() == auth.uid))",
+          ".write": "auth != null && $seat.matches(/^[A-Z][0-9]+$/) && ((newData.child('status').val() == 'held' && newData.child('holder').val() == auth.uid && newData.child('lockedAt').val() == now && !newData.child('bookedAt').exists() && (!data.exists() || (data.child('status').val() == 'held' && data.child('lockedAt').val() + root.child('events/' + $event + '/ttlMs').val() < now)) && root.child('tickets/' + $event + '/' + auth.uid).exists() && (root.child('events/' + $event + '/admissionMode').val() == 'occupancy' ? root.child('tickets/' + $event + '/' + auth.uid).val() < root.child('counters/' + $event + '/nowServing').val() : root.child('tickets/' + $event + '/' + auth.uid).val() * root.child('events/' + $event + '/intervalMs').val() <= (now - root.child('events/' + $event + '/saleStart').val()) * root.child('events/' + $event + '/batch').val())) || (newData.child('status').val() == 'booked' && newData.child('holder').val() == auth.uid && newData.child('lockedAt').val() == data.child('lockedAt').val() && newData.child('bookedAt').val() == now && data.child('status').val() == 'held' && data.child('holder').val() == auth.uid && data.child('lockedAt').val() + root.child('events/' + $event + '/ttlMs').val() >= now) || (!newData.exists() && data.child('status').val() == 'held' && data.child('holder').val() == auth.uid))",
           ".validate": "newData.hasChildren(['status', 'holder', 'lockedAt'])",
           "status": {
             ".validate": "newData.val() == 'held' || newData.val() == 'booked'"
