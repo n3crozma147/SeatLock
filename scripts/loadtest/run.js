@@ -54,7 +54,7 @@ console.log(
 
 let coordinator = null;
 if (mode === 'occupancy') {
-  coordinator = startCoordinator({ db: admin.db, eventId });
+  coordinator = startCoordinator({ db: admin.db, eventId, log: (m) => { if (m.startsWith("WARNING")) console.log(m); } });
   await coordinator.ready;
 }
 
@@ -148,3 +148,5 @@ if (violations.length) {
   );
 }
 await admin.close();
+// The client SDK instances can keep the event loop alive after deleteApp(); the work is done, so exit.
+process.exit(process.exitCode ?? 0);

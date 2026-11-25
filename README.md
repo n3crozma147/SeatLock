@@ -97,6 +97,21 @@ npm run dev
 Open **<http://localhost:5173/event/demo>** in **two browser windows** and try to grab
 the same seat from both.
 
+### Occupancy-based admission (optional)
+
+By default people are let in on a timetable (`batch` every `intervalMs`). To cap how many
+people are *inside* the seat map at once, seed the event in occupancy mode and run the
+coordinator next to the emulators:
+
+```bash
+npm run seed -- --mode occupancy --capacity 20   # terminal 2
+npm run coordinator                              # terminal 3: leave it running
+```
+
+Without the coordinator running, nobody is admitted in this mode. It is safe to restart.
+Flags: `--event`, `--sweep` (ms, default 500), `--min-write` (ms, default 250), `--window` (ms,
+default 2 x the hold time). See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md#admission-control).
+
 ---
 
 ## 🧪 Tests
@@ -105,7 +120,7 @@ the same seat from both.
 | --- | --- |
 | `npm test` | Pure logic |
 | `npm run test:rules` | Security rules, run against the emulator |
-| `npm run loadtest` | Thundering-herd test *(emulators must be running)* |
+| `npm run loadtest` | Thundering-herd test *(emulators must be running)*. Add `-- --mode occupancy --capacity 20 --dwell 8000` to compare admission modes |
 
 ---
 

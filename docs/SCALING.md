@@ -18,4 +18,9 @@ invariants in ARCHITECTURE.md stay the same; only the enforcement point moves.
 1. Move holds to Redis, keep everything else. Measure hold latency against the load test baseline.
 2. Put Postgres behind confirmations with the unique constraint.
 3. Add the message queue between hold and confirm.
-4. Replace time-based admission with occupancy-based admission.
+4. Replace time-based admission with occupancy-based admission. **Prototyped:** set
+   `admissionMode: 'occupancy'` and run `npm run coordinator` (see ARCHITECTURE.md,
+   "Admission control"). The coordinator is a single Node process that is the only
+   writer of `nowServing`. In production this would be a Redis counter of people inside
+   (or a gateway token bucket) with real session start and end events, not polling, and
+   more than one instance with leader election.

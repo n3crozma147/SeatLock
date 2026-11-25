@@ -204,6 +204,21 @@ export function startCoordinator({
         windowMs: window,
       });
       state.cursor = scan.cursor;
+      if (scan.inside > event.capacity) {
+        // Should not happen: we only admit into free capacity. Say exactly who is counted.
+        const who = [];
+        for (let ticket = scan.cursor; ticket < state.nowServing; ticket++) {
+          const stored = state.admissions.get(ticket);
+          if (!stored) {
+            who.push(`${ticket}:no-record`);
+            continue;
+          }
+          const uid = stored.uid ?? state.ticketToUid.get(ticket) ?? null;
+          const verdict = assessAdmitted({ ...stored, uid }, { now: at, windowMs: window, bookedUids: state.bookedUids, holders: state.holders });
+          if (verdict.inside) who.push(`${ticket}:${verdict.reason}${stored.held ? '+held' : ''}${uid ? '' : '+nouid'}`);
+        }
+        log(`WARNING inside ${scan.inside} > capacity ${event.capacity}; nowServing ${state.nowServing}: ${who.join(' ')}`);
+      }
       stats.lastInside = scan.inside;
       stats.peakInside = Math.max(stats.peakInside, scan.inside);
 
