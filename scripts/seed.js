@@ -2,6 +2,7 @@
 // Usage:
 //   npm run seed                                   # demo event on the emulator
 //   npm run seed -- --event demo --rows 8 --cols 12 --ttl 60000 --batch 2 --interval 15000 --start-in 30000
+//   npm run seed -- --mode occupancy --capacity 20   # admit by room occupancy (also run `npm run coordinator`)
 //   npm run seed -- --prod --project my-proj --database-url https://my-proj-default-rtdb.asia-southeast1.firebasedatabase.app
 //
 // Seeding always resets the event: seats, tickets and bookings are wiped.
@@ -21,6 +22,8 @@ const config = buildEventConfig({
   intervalMs: num(args.interval, 10_000),
   maxSeats: num(args['max-seats'], 4),
   saleStart: Date.now() + num(args['start-in'], 0),
+  admissionMode: args.mode ?? 'time',
+  capacity: num(args.capacity, 50),
 });
 
 const { db, close } = connectAdmin({
@@ -34,7 +37,10 @@ try {
   console.log(`Seeded event "${eventId}" (${config.rows}x${config.cols} seats)`);
   console.table({
     ttl: `${config.ttlMs / 1000}s`,
-    admission: `${config.batch} every ${config.intervalMs / 1000}s`,
+    admission:
+      config.admissionMode === 'occupancy'
+        ? `occupancy: at most ${config.capacity} inside (run npm run coordinator)`
+        : `${config.batch} every ${config.intervalMs / 1000}s`,
     'sale starts': new Date(config.saleStart).toLocaleTimeString(),
     'max seats per person': config.maxSeats,
   });

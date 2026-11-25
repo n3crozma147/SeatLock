@@ -12,6 +12,7 @@
     "test": "vitest run tests/unit",
     "test:rules": "firebase emulators:exec --only database \"vitest run tests/rules\"",
     "seed": "node scripts/seed.js",
+    "coordinator": "node scripts/coordinator.js",
     "loadtest": "node scripts/loadtest/run.js",
     "deploy:rules": "firebase deploy --only database --project prod"
   },

@@ -4,7 +4,15 @@
 import { applicationDefault, deleteApp, initializeApp } from 'firebase-admin/app';
 import { getDatabase } from 'firebase-admin/database';
 import { MAX_COLS, MAX_ROWS } from '../../src/lib/seatLayout.js';
-import { allBookingsPath, counterPath, eventPath, seatsPath, ticketsPath } from '../../src/lib/paths.js';
+import {
+  allBookingsPath,
+  coordinatorAdmittedPath,
+  counterPath,
+  eventPath,
+  nowServingPath,
+  seatsPath,
+  ticketsPath,
+} from '../../src/lib/paths.js';
 
 export const DEFAULT_PROJECT = 'demo-seatlock';
 export const EMULATOR_DB_HOST = '127.0.0.1:9000';
@@ -23,6 +31,8 @@ export function connectAdmin({ prod = false, projectId = DEFAULT_PROJECT, databa
   return { app, db: getDatabase(app), close: () => deleteApp(app) };
 }
 
+export const ADMISSION_MODES = ['time', 'occupancy'];
+
 export function buildEventConfig(overrides = {}) {
   const config = {
     name: 'Opening night',
@@ -32,6 +42,10 @@ export function buildEventConfig(overrides = {}) {
     batch: 5,
     intervalMs: 10_000,
     maxSeats: 4,
+    // 'time' (default): a leaky bucket, `batch` people every `intervalMs`.
+    // 'occupancy': the coordinator admits people only while fewer than `capacity` are inside.
+    admissionMode: 'time',
+    capacity: 50,
     saleStart: Date.now(),
     ...overrides,
   };
@@ -41,6 +55,10 @@ export function buildEventConfig(overrides = {}) {
   for (const key of ['ttlMs', 'batch', 'intervalMs', 'maxSeats']) {
     if (!(Number.isFinite(config[key]) && config[key] > 0)) problems.push(`${key} must be a positive number`);
   }
+  if (!ADMISSION_MODES.includes(config.admissionMode)) {
+    problems.push(`admissionMode must be one of ${ADMISSION_MODES.join(', ')}`);
+  }
+  if (!(Number.isInteger(config.capacity) && config.capacity > 0)) problems.push('capacity must be a positive integer');
   if (problems.length) throw new Error(`Invalid event config: ${problems.join('; ')}`);
   return config;
 }
@@ -50,6 +68,8 @@ export async function seedEvent(db, eventId, config) {
   await db.ref().update({
     [eventPath(eventId)]: config,
     [counterPath(eventId)]: 0,
+    [nowServingPath(eventId)]: 0,
+    [coordinatorAdmittedPath(eventId)]: null,
     [seatsPath(eventId)]: null,
     [ticketsPath(eventId)]: null,
     [allBookingsPath(eventId)]: null,
